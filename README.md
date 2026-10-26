@@ -65,7 +65,7 @@ limestone, and Estaillades, microporous), spanning 0.07 to 255 mD:
 ├── metric_labels.py         # shared plain-English metric names
 ├── all_rocks_openpnm.csv    # pore-network metrics + simulated permeability per subvolume
 ├── all_rocks_mapper.csv     # Mapper-graph metrics per subvolume
-├── figures/                 # results figures (see below)
+├── fig1_…fig6_*.png         # results figures (see below)
 ├── requirements.txt
 └── .gitignore
 ```
@@ -74,6 +74,8 @@ The two CSV tables let you rerun the analysis and models (for example
 `python train_predictor_rf.py`) without downloading or processing any micro-CT data.
 
 ## Figures
+
+All six figures are in the repository's top level.
 
 - `fig1_perm_vs_porosity.png`: permeability vs porosity across subvolumes
 - `fig2_openpnm_predictors.png`: pore-network metrics vs permeability
