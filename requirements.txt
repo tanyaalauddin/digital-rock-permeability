@@ -1,0 +1,31 @@
+# Core pipeline
+numpy
+scipy
+scikit-learn
+networkx
+pandas
+matplotlib
+tifffile
+h5py
+
+# Pore-network extraction and flow simulation
+porespy
+openpnm
+
+# Topological data analysis (Mapper)
+kmapper
+
+# Interpretability (optional but recommended)
+shap
+
+# Graph neural network (install separately; see note below)
+# torch
+# torch-geometric
+#
+# PyTorch and PyTorch Geometric are best installed following the official
+# instructions for your OS/GPU/CUDA version:
+#   https://pytorch.org/get-started/locally/
+#   https://pytorch-geometric.readthedocs.io/en/latest/install/installation.html
+# CPU-only example:
+#   pip install torch
+#   pip install torch-geometric

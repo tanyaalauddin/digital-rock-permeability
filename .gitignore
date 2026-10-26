@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+ganenv/
+.ipynb_checkpoints/
+
+# Large data (do not commit segmented volumes)
+*.raw
+*.raw.gz
+*.tif
+*.tiff
+*.h5
+*.hdf5
+*.mhd
+data/
+Ketton_*/
+Estaillades_*/
+
+# Saved graphs (regenerable)
+graphs/
+*.npz
+
+# Generated/interactive outputs
+mapper_*.html
+
+# OS / preview cruft
+.DS_Store
+page-*.jpg
+mpage-*.jpg
+subpage-*.jpg
+*.pdf
+
+# Keep: figures the README references (comment out the line below to commit them)
+# figures/
