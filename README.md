@@ -8,7 +8,7 @@ used to test whether AI-generated ("synthetic") rocks are physically realistic.
 **Author:** Tanya O. Alauddin · **Collaborator:** Rayan Kanfar (Upstream Advanced Research Center, Saudi Aramco)
 
 > Research in progress toward a journal paper. A shortened version was submitted to the
-> AGU 2026 Fall Meeting.
+> AGU 2026 Fall Meeting. Please do not redistribute without the authors' permission.
 
 ---
 
@@ -46,43 +46,39 @@ limestone, and Estaillades, microporous), spanning 0.07 to 255 mD:
   (pore-radius) filter lifts them from R2 ~ -0.9 to ~ 0 but they still do not match the
   pore network, showing that explicit pore-throat connectivity is what carries flow.
 
+Expanded to four rock types (two carbonates, two sandstones; 95 subvolumes), a ridge
+regression on graph metrics generalizes to an entirely unseen rock type (R2 = 0.29, 77
+percent of samples within a factor of three) and outperforms tree-based models and a
+graph neural network, which is data-limited at this scale. See `benchmark_models.py`
+(metrics models, with SHAP) and `train_gnn.py` (graph neural network).
+
 ## Repository structure
 
 ```
 .
-├── rock_to_graph.py         # volume -> Mapper graph -> metrics
-├── pore_network_openpnm.py  # volume -> SNOW pore network -> permeability + metrics
-├── build_dataset.py         # cut subvolumes, run both pipelines into tables
-├── build_ketton_dataset.py  # Ketton-only dataset builder
-├── analyze_metrics.py       # correlations of metrics vs porosity/permeability
-├── train_predictor.py       # ridge regression predictor (cross-validated)
-├── train_predictor_rf.py    # random-forest predictor
-├── export_graphs.py         # save pore-network graphs for the GNN
-├── train_gnn.py             # graph neural network permeability predictor (in progress)
-├── analyze_generated.py     # measure real vs generated rocks
-├── discriminate.py          # real-vs-fake classifier (AUC)
-├── make_figures.py          # results figures
-├── metric_labels.py         # shared plain-English metric names
-├── all_rocks_openpnm.csv    # pore-network metrics + simulated permeability per subvolume
-├── all_rocks_mapper.csv     # Mapper-graph metrics per subvolume
-├── fig1_…fig6_*.png         # results figures (see below)
+├── src/                         # pipeline code
+│   ├── rock_to_graph.py         # volume -> Mapper graph -> metrics
+│   ├── pore_network_openpnm.py  # volume -> SNOW pore network -> permeability + metrics
+│   ├── build_dataset.py         # cut subvolumes, run both pipelines into tables
+│   ├── analyze_metrics.py       # correlations of metrics vs porosity/permeability
+│   ├── train_predictor.py       # ridge regression predictor (cross-validated)
+│   ├── train_predictor_rf.py    # random-forest predictor
+│   ├── export_graphs.py         # save pore-network graphs for the GNN
+│   ├── train_gnn.py             # graph neural network permeability predictor
+│   ├── analyze_generated.py     # measure real vs generated rocks
+│   ├── discriminate.py          # real-vs-fake classifier (AUC)
+│   ├── make_figures.py          # results figures
+│   └── metric_labels.py         # shared plain-English metric names
+├── docs/                        # explainer notes and the project/journal plans
+├── figures/                     # generated figures
+├── data/                        # (not committed) segmented volumes; see Data below
 ├── requirements.txt
-└── .gitignore
+├── .gitignore
+└── README.md
 ```
 
-The two CSV tables let you rerun the analysis and models (for example
-`python train_predictor_rf.py`) without downloading or processing any micro-CT data.
-
-## Figures
-
-All six figures are in the repository's top level.
-
-- `fig1_perm_vs_porosity.png`: permeability vs porosity across subvolumes
-- `fig2_openpnm_predictors.png`: pore-network metrics vs permeability
-- `fig3_mapper_predictors.png`: Mapper-graph metrics vs permeability
-- `fig4_method_comparison.png`: correlation of each metric with permeability, pore network vs Mapper
-- `fig5_pred_vs_actual.png`: predicted vs actual permeability (ridge)
-- `fig6_rf_pred_vs_actual.png`: predicted vs actual permeability (random forest)
+*(Scripts currently live in the project root; moving them into `src/` is optional and
+does not change how they run.)*
 
 ## Getting started
 
@@ -98,6 +94,20 @@ Quick end-to-end test on a synthetic rock (no download needed):
 python rock_to_graph.py --synthetic
 python pore_network_openpnm.py --synthetic
 ```
+
+## Reproduce the full analysis
+
+Once the segmented rock volumes are downloaded (see Data below), the whole pipeline runs
+with one command:
+
+```bash
+bash run_all.sh
+```
+
+This exports the pore-network graphs, benchmarks the graph-metric models (ridge, random
+forest, gradient boosting) with SHAP, and trains the graph neural network, all under both
+random and grouped-by-rock cross-validation. Key outputs: `fig_benchmark_all.png`,
+`fig_shap.png`, and `fig_gnn_pred_vs_actual.png`.
 
 ## Data
 
@@ -126,4 +136,4 @@ appear in both train and test, which is a strict test of generalization.
 ## Acknowledgements and tools
 
 Built on OpenPNM and PoreSpy (Gostick et al.), NetworkX, scikit-learn, and PyTorch
-Geometric. 
+Geometric. See the journal plan in `docs/` for full references.

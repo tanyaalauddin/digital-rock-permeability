@@ -1,0 +1,68 @@
+# ===== Environment / Python =====
+__pycache__/
+*.pyc
+venv/
+ganenv/
+.ipynb_checkpoints/
+
+# ===== Large data (never commit raw volumes) =====
+*.raw
+*.raw.gz
+*.tif
+*.tiff
+*.h5
+*.hdf5
+*.mhd
+data/
+Ketton_*/
+Estaillades_*/
+Bentheimer_*/
+Doddington_*/
+graphs/
+*.npz
+
+# ===== Unpublished writing (keep out of the public repo) =====
+Technical_Report.*
+manuscript_draft.md
+journal_paper_plan.md
+AGU_project_roadmap.md
+abstract_draft.md
+abstract_full.md
+AGU_submission.md
+AGU_submission_doc.md
+MEOS_GEO_2027_abstract.md
+*.docx
+*.pdf
+
+# ===== Teaching / scratch notes (not part of the code portfolio) =====
+START_HERE_simple_guide.md
+code_explained.md
+line_by_line_decoded.md
+openpnm_simple_guide.md
+openpnm_line_by_line.md
+metric_glossary.md
+NEXT_STEPS_both_models.md
+SETUP_gan.md
+
+# ===== Intermediate / abstract outputs =====
+AGU_figures.png
+scatter_*.png
+ketton_*.csv
+all_openpnm.csv
+correlations.csv
+metrics_*.csv
+mapper_*.html
+
+# stray office/temp files (random names, no extension)
+zileU7Yv
+lu*.tmp
+
+# ===== OS / editor junk =====
+.DS_Store
+.~lock.*
+*.tmp
+page-*.jpg
+mpage-*.jpg
+subpage-*.jpg
+meosrev-*.jpg
+meosv3-*.jpg
