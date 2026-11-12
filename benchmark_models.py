@@ -1,21 +1,17 @@
 #!/usr/bin/env python3
 """
-benchmark_models.py  --  graph METRICS models on the same graphs the GNN uses.
+Graph-metric models on the same graphs used by the GNN.
 
-For every pore-network graph in graphs/ (saved by export_graphs.py), this reconstructs
-the network, computes the hand-engineered graph metrics with NetworkX, and benchmarks
-classical models (ridge, random forest, gradient boosting) on them. It uses the SAME two
-cross-validation schemes as train_gnn.py:
-  * random 5-fold            -- can metrics predict permeability at all?
-  * grouped-by-rock          -- can they generalise to an unseen rock type?
+For each pore-network graph in graphs/ (from export_graphs.py), this rebuilds the
+network, computes graph metrics with NetworkX, and fits ridge, random forest, and
+gradient boosting. It uses the same two cross-validation schemes as train_gnn.py
+(random 5-fold and grouped by rock) so the metric models and the GNN can be compared
+on identical data and splits.
 
-Run this alongside train_gnn.py to compare the interpretable graph-metrics approach
-head-to-head with the learned GNN on identical data and splits.
-
-INSTALL: pip install scikit-learn networkx numpy matplotlib
-RUN:     python benchmark_models.py --graphs graphs/
-Outputs: a results table printed, random-forest feature importances, and
-         fig_model_benchmark.png (R2 by model and split).
+Install: pip install scikit-learn networkx numpy matplotlib
+Usage:   python benchmark_models.py --graphs graphs/
+Outputs: a results table, random-forest feature importances, and
+         fig_model_benchmark.png.
 """
 
 import argparse, glob, os
@@ -54,12 +50,15 @@ def load_dataset(graph_dir):
         rows.append(m); ys.append(float(z["y"])); srcs.append(str(z["source"]))
     keys = [k for k in rows[0] if all(k in r for r in rows)]
     X = np.array([[float(r[k]) for k in keys] for r in rows])
-    # replace any nan/inf (e.g. assortativity) with column means
+    # fill nan/inf values (e.g. assortativity) with the column mean
     col_mean = np.nanmean(np.where(np.isfinite(X), X, np.nan), axis=0)
     inds = np.where(~np.isfinite(X))
     X[inds] = np.take(col_mean, inds[1])
-    # drop near-constant columns (zero variance trips the scaler)
-    keep_cols = X.std(axis=0) > 1e-12
+    # drop columns that are effectively constant. A tiny but nonzero variance
+    # blows up under standardization and overflows RidgeCV's internal matmul, so
+    # filter on variance relative to the column's magnitude, not an absolute floor.
+    scale = np.maximum(np.abs(X.mean(axis=0)), 1e-12)
+    keep_cols = (X.std(axis=0) / scale) > 1e-8
     X = X[:, keep_cols]
     keys = [k for k, kc in zip(keys, keep_cols) if kc]
     return X, np.array(ys), np.array(srcs), keys
@@ -67,8 +66,12 @@ def load_dataset(graph_dir):
 
 def oof_predict(model_fn, X, y, splitter):
     pred = np.zeros(len(y))
-    for tr, te in splitter:
-        m = model_fn(); m.fit(X[tr], y[tr]); pred[te] = m.predict(X[te])
+    # RidgeCV's leave-one-out GCV does matmuls that can underflow/overflow on
+    # collinear metric columns. It is harmless (the fitted model is unaffected),
+    # so ignore those floating-point warnings rather than print them per fold.
+    with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+        for tr, te in splitter:
+            m = model_fn(); m.fit(X[tr], y[tr]); pred[te] = m.predict(X[te])
     return pred
 
 
@@ -83,13 +86,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--graphs", default="graphs/")
     ap.add_argument("--min-logk", type=float, default=-4.0,
-                    help="drop samples with log10(K) below this (failed/disconnected sims)")
+                    help="drop samples with log10(K) below this value")
     args = ap.parse_args()
 
     X, y, srcs, keys = load_dataset(args.graphs)
     keep = y >= args.min_logk
     if keep.sum() < len(y):
-        print(f"[bench] dropped {len(y) - int(keep.sum())} samples with log10(K) < {args.min_logk} (failed sims)")
+        print(f"[bench] dropped {len(y) - int(keep.sum())} samples with log10(K) < {args.min_logk}")
     X, y, srcs = X[keep], y[keep], srcs[keep]
     n_groups = len(set(srcs))
     print(f"[bench] {len(y)} graphs, {X.shape[1]} metrics, {n_groups} rocks: {sorted(set(srcs))}")
@@ -111,14 +114,14 @@ def main():
             results[sname][mname] = r2
             print(f"{mname:16s} {sname:16s}  {r2:+.2f}  {rmse:.2f}  {acc:.0f}%")
 
-    # random-forest feature importances (interpretability)
+    # random-forest feature importances
     rf = models["RandomForest"](); rf.fit(X, y)
     order = np.argsort(rf.feature_importances_)[::-1][:6]
     print("\nMost informative graph metrics (random forest):")
     for i in order:
         print(f"  {label(keys[i]):24s} {rf.feature_importances_[i]:.3f}")
 
-    # SHAP interpretability (which metrics drive predictions, and in which direction)
+    # SHAP values: which metrics drive predictions and in which direction
     try:
         import shap
         names = [label(k) for k in keys]

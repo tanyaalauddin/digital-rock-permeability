@@ -1,24 +1,19 @@
 #!/usr/bin/env python3
 """
-train_gnn.py  --  graph neural network that predicts permeability from the pore network.
+GraphSAGE model for predicting permeability from the pore network.
 
-A GraphSAGE encoder reads each pore graph (nodes = pores with size, coordination, and
-position; edges = throats), global-pools it, concatenates a few graph-level features that
-carry absolute scale (mean pore size, graph size, mean coordination), and an MLP head
-predicts log10(permeability).
+Each pore graph has nodes (pores: size, coordination, position) and edges (throats).
+The network pools the node embeddings, adds a few graph-level features for absolute
+scale (mean pore size, graph size, mean coordination), and predicts log10(permeability).
 
-It reports TWO evaluations, because they answer different questions:
-  * random 5-fold CV            -- can the model predict permeability at all?
-  * grouped-by-rock CV          -- can it generalise to an entirely unseen rock type?
-Grouped CV is the strict test; random CV is the standard one.
+Results are reported for two cross-validation schemes: random 5-fold and grouped by
+rock. The grouped split holds out whole rock types and is the stricter generalisation
+test. Pore diameters are log-scaled to cover the wide range across rock types.
 
-Node features are log-scaled where appropriate so the model handles the wide range of
-pore sizes and permeabilities across rock types.
-
-INSTALL: pip install torch torch-geometric
-RUN:     python train_gnn.py --graphs graphs/
-         python train_gnn.py --graphs graphs/ --no-global   # ablation: drop global feats
-Outputs: metrics for both splits, and fig_gnn_pred_vs_actual.png (grouped split).
+Install: pip install torch torch-geometric
+Usage:   python train_gnn.py --graphs graphs/
+         python train_gnn.py --graphs graphs/ --no-global
+Outputs: metrics for both splits and fig_gnn_pred_vs_actual.png.
 """
 
 import argparse, glob, os
@@ -34,7 +29,7 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.nn import SAGEConv, global_mean_pool
 from sklearn.model_selection import GroupKFold, KFold
 
-ACC_TOL = 0.5          # log10 units (~ factor of 3)
+ACC_TOL = 0.5          # log10 units, about a factor of three
 EPS = 1e-9
 GLOBAL_DIM = 4
 
@@ -50,14 +45,14 @@ def load_records(graph_dir):
 
 
 def transform_x(xraw):
-    """log-scale pore diameter (column 0); keep coordination and position."""
+    """Log-scale pore diameter (column 0), leave coordination and position."""
     xt = xraw.copy()
     xt[:, 0] = np.log10(np.clip(xt[:, 0], EPS, None))
     return xt
 
 
 def global_feats(xraw):
-    """graph-level features carrying absolute scale the pooled embedding lacks."""
+    """Graph-level features for the absolute scale that pooling discards."""
     d, deg = xraw[:, 0], xraw[:, 1]
     return np.array([np.log10(max(d.mean(), EPS)),
                      np.log10(max(len(d), 1)),
@@ -139,9 +134,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--graphs", default="graphs/")
     ap.add_argument("--epochs", type=int, default=150)
-    ap.add_argument("--no-global", action="store_true", help="ablation: drop graph-level features")
+    ap.add_argument("--no-global", action="store_true", help="drop graph-level features")
     ap.add_argument("--min-logk", type=float, default=-4.0,
-                    help="drop samples with log10(K) below this (failed/disconnected sims)")
+                    help="drop samples with log10(K) below this value")
     args = ap.parse_args()
     use_global = not args.no_global
 
@@ -149,23 +144,23 @@ def main():
     before = len(recs)
     recs = [r for r in recs if r["y"] >= args.min_logk]
     if len(recs) < before:
-        print(f"[gnn] dropped {before - len(recs)} samples with log10(K) < {args.min_logk} (failed sims)")
+        print(f"[gnn] dropped {before - len(recs)} samples with log10(K) < {args.min_logk}")
     sources = np.array([r["source"] for r in recs])
     n_groups = len(set(sources))
     print(f"[gnn] {len(recs)} graphs from {n_groups} rocks: {sorted(set(sources))}")
     print(f"[gnn] global features: {'ON' if use_global else 'OFF (ablation)'}")
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # 1) random 5-fold: can it predict at all?
+    # random 5-fold split
     rk = KFold(n_splits=5, shuffle=True, random_state=0).split(recs)
     r2r, rmser, accr, _, _ = run_cv(recs, rk, use_global, args.epochs, device, name="random")
     print(f"\n[random 5-fold]  R2={r2r:.2f}  RMSE={rmser:.2f}  acc={accr:.0f}%")
 
-    # 2) grouped by rock: can it generalise to an unseen rock type?
+    # grouped by rock, holds out whole rock types
     if n_groups >= 2:
         gk = GroupKFold(n_splits=min(5, n_groups)).split(recs, groups=sources)
         r2g, rmseg, accg, predg, actg = run_cv(recs, gk, use_global, args.epochs, device, name="grouped")
-        print(f"[grouped-by-rock] R2={r2g:.2f}  RMSE={rmseg:.2f}  acc={accg:.0f}%  (strict generalisation)")
+        print(f"[grouped-by-rock] R2={r2g:.2f}  RMSE={rmseg:.2f}  acc={accg:.0f}%")
     else:
         predg, actg, r2g, rmseg, accg = None, None, float("nan"), float("nan"), float("nan")
 

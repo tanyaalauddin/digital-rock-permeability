@@ -3,7 +3,7 @@
 #
 # Prerequisite: the segmented rock volumes (.raw) must already be downloaded and
 # decompressed (they are too large to commit; see DATA_library_plan.md for sources and
-# the per-rock dimensions / voxel sizes / pore value). This script assumes the four
+# the per-rock dimensions / voxel sizes / pore value). This script assumes the six
 # Imperial College rocks used in the report are present in the paths below.
 #
 # Usage:  bash run_all.sh
@@ -22,6 +22,8 @@ python export_graphs.py --input "Ketton_1000c_3p00006um/Ketton_1000c_3p00006um.r
 python export_graphs.py --input "Estaillades_1000c_3p31136um.raw"                           --shape 1000 1000 1000 --pore-value 0 --voxel-size 3.31136e-6 --source estaillades --label real --out graphs/
 python export_graphs.py --input "Bentheimer_1000c_3p0035um/Bentheimer_1000c_3p0035um.raw"   --shape 1000 1000 1000 --pore-value 0 --voxel-size 3.0035e-6  --source bentheimer  --label real --out graphs/
 python export_graphs.py --input "Doddington_1000c_2p6929um/Doddington_1000c_2p6929um.raw"   --shape 1000 1000 1000 --pore-value 0 --voxel-size 2.6929e-6  --source doddington  --label real --out graphs/
+python export_graphs.py --input "Berea sandstone/Berea.raw"                                  --shape 400 400 400    --pore-value 0 --voxel-size 5.345e-6   --source berea       --label real --out graphs/
+python export_graphs.py --input "C1/C1.raw"                                                  --shape 400 400 400    --pore-value 0 --voxel-size 2.85e-6    --source c1          --label real --out graphs/
 
 echo "==================================================================="
 echo " 2. Scalar-metric tables + correlation/figures (per rock)"

@@ -46,11 +46,12 @@ limestone, and Estaillades, microporous), spanning 0.07 to 255 mD:
   (pore-radius) filter lifts them from R2 ~ -0.9 to ~ 0 but they still do not match the
   pore network, showing that explicit pore-throat connectivity is what carries flow.
 
-Expanded to four rock types (two carbonates, two sandstones; 95 subvolumes), a ridge
-regression on graph metrics generalizes to an entirely unseen rock type (R2 = 0.29, 77
-percent of samples within a factor of three) and outperforms tree-based models and a
-graph neural network, which is data-limited at this scale. See `benchmark_models.py`
-(metrics models, with SHAP) and `train_gnn.py` (graph neural network).
+Expanded to six rock types (three carbonates, three sandstones; 149 subvolumes), a ridge
+regression on graph metrics reaches a cross-validated R2 of 0.55 and generalizes to an
+entirely unseen rock type (R2 = 0.35, 81 percent of samples within a factor of three),
+outperforming tree-based models and a graph neural network, which is data-limited at this
+scale. See `benchmark_models.py` (metrics models, with SHAP) and `train_gnn.py` (graph
+neural network).
 
 ## Repository structure
 
